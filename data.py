@@ -55,7 +55,8 @@ class ImageData:
                      repeat=-1):
         def _parse_func(path):
             img = tf.read_file(path)
-            img = tf.image.decode_jpeg(img, channels=channels)
+            #img = tf.image.decode_jpeg(img, channels=channels)
+            img = tf.image.decode_png(img, channels=channels)
             img = tf.image.random_flip_left_right(img)
             img = tf.image.resize_images(img, [load_size, load_size])
             img = (img - tf.reduce_min(img)) / (tf.reduce_max(img) - tf.reduce_min(img))
