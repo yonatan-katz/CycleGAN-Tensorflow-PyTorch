@@ -21,6 +21,7 @@ parser.add_argument('--load_size', dest='load_size', type=int, default=286, help
 parser.add_argument('--crop_size', dest='crop_size', type=int, default=256, help='then crop to this size')
 parser.add_argument('--epoch', dest='epoch', type=int, default=200, help='# of epoch')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=1, help='# images in a batch')
+parser.add_argument('--num_thread', dest='num_thread', type=int, default=1, help='# how many threads to use')
 parser.add_argument('--lr', dest='lr', type=float, default=0.0002, help='initial learning rate for adam')
 args = parser.parse_args()
 
@@ -29,7 +30,9 @@ load_size = args.load_size
 crop_size = args.crop_size
 epoch = args.epoch
 batch_size = args.batch_size
+num_threads = args.num_thread
 lr = args.lr
+buffer_size=8
 
 
 """ graph """
@@ -102,15 +105,23 @@ sess = tf.Session(config=config)
 it_cnt, update_cnt = utils.counter()
 
 ''' data '''
-a_img_paths = glob('./datasets/' + dataset + '/trainA/*.jpg')
-b_img_paths = glob('./datasets/' + dataset + '/trainB/*.jpg')
-a_data_pool = data.ImageData(sess, a_img_paths, batch_size, load_size=load_size, crop_size=crop_size)
-b_data_pool = data.ImageData(sess, b_img_paths, batch_size, load_size=load_size, crop_size=crop_size)
+a_img_paths = glob('./datasets/' + dataset + '/trainA/*.png')
+b_img_paths = glob('./datasets/' + dataset + '/trainB/*.png')
+a_data_pool = data.ImageData(sess, a_img_paths, batch_size, load_size=load_size, 
+                             crop_size=crop_size, num_threads=num_threads,
+                             buffer_size=buffer_size)
+b_data_pool = data.ImageData(sess, b_img_paths, batch_size, load_size=load_size, 
+                             crop_size=crop_size, num_threads=num_threads,
+                             buffer_size=buffer_size)
 
-a_test_img_paths = glob('./datasets/' + dataset + '/testA/*.jpg')
-b_test_img_paths = glob('./datasets/' + dataset + '/testB/*.jpg')
-a_test_pool = data.ImageData(sess, a_test_img_paths, batch_size, load_size=load_size, crop_size=crop_size)
-b_test_pool = data.ImageData(sess, b_test_img_paths, batch_size, load_size=load_size, crop_size=crop_size)
+a_test_img_paths = glob('./datasets/' + dataset + '/testA/*.png')
+b_test_img_paths = glob('./datasets/' + dataset + '/testB/*.png')
+a_test_pool = data.ImageData(sess, a_test_img_paths, batch_size, load_size=load_size, 
+                             crop_size=crop_size, num_threads=num_threads,
+                             buffer_size=buffer_size)
+b_test_pool = data.ImageData(sess, b_test_img_paths, batch_size, load_size=load_size, 
+                             crop_size=crop_size, num_threads=num_threads,
+                             buffer_size=buffer_size)
 
 a2b_pool = utils.ItemPool()
 b2a_pool = utils.ItemPool()
