@@ -52,10 +52,10 @@ def train():
     #print("Discriminator shape:{}".format())
     
     # operations
-    a_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
-    b_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
-    a2b_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
-    b2a_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
+    a_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3], name="a_real")
+    b_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3], name="b_real")
+    a2b_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3], name="a2b_sample")
+    b2a_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3],  name="b2a_sample")
     
     a2b = generator_a2b(a_real)
     b2a = generator_b2a(b_real)
@@ -66,6 +66,7 @@ def train():
     b2a_logit = discriminator_a(b2a)
     #b2a_sample_logit = discriminator_a(b2a_sample)
     b_logit = discriminator_b(b_real)
+    print("b_logit shape:{}".format(b_logit.get_shape()))
     a2b_logit = discriminator_b(a2b)
     #a2b_sample_logit = discriminator_b(a2b_sample)
     
@@ -92,6 +93,9 @@ def train():
     
     d_loss_a = -wd_a + 10.0 * gp_a
     d_loss_b = -wd_b + 10.0 * gp_b
+    #d_loss_a = -wd_a
+    #d_loss_b = -wd_b
+    
     
       
     
@@ -148,6 +152,7 @@ def train():
         batch_epoch = min(train_a_size,train_b_size) // batch_size
         max_it = epoch * batch_epoch
         for it in range(sess.run(it_cnt), max_it):
+            print("Start train loop!")
             sess.run(update_cnt)
             epoch = it // batch_epoch
             it_epoch = it % batch_epoch + 1
@@ -159,24 +164,44 @@ def train():
             
             b_real_ipt = db_b_i.get_image(image_b_train_names[it_epoch])
             b_real_ipt = cv2.resize(b_real_ipt,(crop_size,crop_size), interpolation = cv2.INTER_CUBIC)
+            
+            print("a_real_ipt shape:{}".format(a_real_ipt.shape))
+            print("b_real_ipt shape:{}".format(b_real_ipt.shape))
                        
-            a_real_ipt = [a_real_ipt]
-            b_real_ipt = [b_real_ipt]
-            a2b_opt, b2a_opt = sess.run([a2b, b2a], feed_dict={a_real: a_real_ipt, b_real: b_real_ipt})
+            a2b_opt, b2a_opt = sess.run([a2b, b2a], feed_dict={a_real: [a_real_ipt], b_real: [b_real_ipt]})
                       
             a2b_sample_ipt = a2b_opt
             b2a_sample_ipt = b2a_opt
                 
             # train G
-            g_summary_opt, _ = sess.run([g_summary, g_train_op], feed_dict={a_real: a_real_ipt, b_real: b_real_ipt})
+            g_summary_opt, _ = sess.run([g_summary, g_train_op], feed_dict={a_real: [a_real_ipt], b_real: [b_real_ipt]})
+            print("feed_dict g_summary_opt phase is finished!")
             summary_writer.add_summary(g_summary_opt, it)
+            
+            #DEBUG
+            #wd_a_val, wd_b_val, d_loss_b_val, d_b_train_op_val = \
+            #    sess.run([wd_a, wd_b, d_loss_b, d_b_train_op], 
+            #        feed_dict={a_real: [a_real_ipt], b_real: [b_real_ipt]})
+            ##print("wd_a_val:{}, wd_b_val:{}, d_loss_b_val:{}, d_b_train_op_val:{}".
+            #      format(wd_a_val, wd_b_val, d_loss_b_val, d_b_train_op_val))
+            
             # train D_b
-            d_summary_b_opt, _ = sess.run([d_summary_b, d_b_train_op], feed_dict={b_real: b_real_ipt, a2b_sample: a2b_sample_ipt})
+            d_summary_b_opt, _ = sess.run([d_summary_b, d_b_train_op], 
+                feed_dict={a_real: [a_real_ipt], 
+                           b_real: [b_real_ipt], 
+                           a2b_sample: a2b_sample_ipt})
             summary_writer.add_summary(d_summary_b_opt, it)
+            print("feed_dict d_summary_b_opt phase is finished!")
+           
             # train D_a
-            d_summary_a_opt, _ = sess.run([d_summary_a, d_a_train_op], feed_dict={a_real: a_real_ipt, b2a_sample: b2a_sample_ipt})
+            d_summary_a_opt, _ = sess.run([d_summary_a, d_a_train_op], 
+                feed_dict={a_real: [a_real_ipt], 
+                            b_real: [b_real_ipt], 
+                            b2a_sample: b2a_sample_ipt})
             summary_writer.add_summary(d_summary_a_opt, it)
     
+    
+            print("feed_dict phase is finished!")
             # display
             if it % 1 == 0:
                 print("Epoch: (%3d) (%5d/%5d)" % (epoch, it_epoch, batch_epoch))
@@ -184,7 +209,7 @@ def train():
             # save
             if (it + 1) % 1000 == 0:
                 save_path = saver.save(sess, '%s/Epoch_(%d)_(%dof%d).ckpt' % (ckpt_dir, epoch, it_epoch, batch_epoch))
-                print('Model saved in file: % s' % save_path)
+                print('###Model saved in file: % s' % save_path)
     
             # sample
 #            if (it + 1) % 100 == 0:

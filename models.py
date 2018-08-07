@@ -26,7 +26,7 @@ def discriminator(img, scope, dim=64, train=True):
         net = conv_bn_lrelu(net, dim * 8, 4, 1)
         net = conv(net, 1, 4, 1)
         net = slim.flatten(net)
-        net = slim.fully_connected(net,1)
+        net = slim.fully_connected(net,1,activation_fn=None)
 
         return net
     
