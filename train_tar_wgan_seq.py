@@ -16,11 +16,29 @@ import tensorflow as tf
 import utils
 
 from deepcharacter import importer_tar
+
+def gradient_penalty(real, fake, f):
+        def interpolate(a, b):
+            shape = tf.concat((tf.shape(a)[0:1], tf.tile([1], [a.shape.ndims - 1])), axis=0)
+            alpha = tf.random_uniform(shape=shape, minval=0., maxval=1.)
+            inter = a + alpha * (b - a)
+            inter.set_shape(a.get_shape().as_list())
+            return inter
+
+        x = interpolate(real, fake)
+        pred = f(x)
+        gradients = tf.gradients(pred, x)[0]
+        slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=range(1, x.shape.ndims)))
+        gp = tf.reduce_mean((slopes - 1.)**2)
+        return gp
+    
+    
 def train():
     epoch = 200
     batch_size = 1
     lr = 0.0002
     crop_size = 4
+    chanels = 5
     tar_db_a = "cameron_images.tgz"
     tar_db_b = "teresa_images.tgz"
     db_a_i = importer_tar.Importer(tar_db_a)
@@ -51,8 +69,8 @@ def train():
     #print("Discriminator shape:{}".format())
     
     # operations
-    a_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
-    b_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
+    a_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3*channels])
+    b_real = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3*channels])
     a2b_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
     b2a_sample = tf.placeholder(tf.float32, shape=[None, crop_size, crop_size, 3])
     
@@ -63,17 +81,17 @@ def train():
     
     a_logit = discriminator_a(a_real)
     b2a_logit = discriminator_a(b2a)
-    b2a_sample_logit = discriminator_a(b2a_sample)
+    #b2a_sample_logit = discriminator_a(b2a_sample)
     b_logit = discriminator_b(b_real)
     a2b_logit = discriminator_b(a2b)
-    a2b_sample_logit = discriminator_b(a2b_sample)
+    #a2b_sample_logit = discriminator_b(a2b_sample)
     
     # losses
     #g_loss_a2b = tf.losses.mean_squared_error(a2b_logit, tf.ones_like(a2b_logit))
     #g_loss_b2a = tf.losses.mean_squared_error(b2a_logit, tf.ones_like(b2a_logit))
     
     g_loss_a2b = -tf.reduce_mean(a2b_logit)
-    g_loss_b2a = -tf.reduce_mean(b22_logit)
+    g_loss_b2a = -tf.reduce_mean(b2a_logit)
    
     cyc_loss_a = tf.losses.absolute_difference(a_real, a2b2a)
     cyc_loss_b = tf.losses.absolute_difference(b_real, b2a2b)
@@ -90,7 +108,6 @@ def train():
     gp_b = gradient_penalty(b_real, a2b, discriminator_b)
     
     d_loss_a = -wd_a + 10.0 * gp_a
-    
     d_loss_b = -wd_b + 10.0 * gp_b
     
 #    d_loss_b_real = tf.losses.mean_squared_error(b_logit, tf.ones_like(b_logit))

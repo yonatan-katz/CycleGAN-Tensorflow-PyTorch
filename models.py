@@ -25,8 +25,37 @@ def discriminator(img, scope, dim=64, train=True):
         net = conv_bn_lrelu(net, dim * 4, 4, 2)
         net = conv_bn_lrelu(net, dim * 8, 4, 1)
         net = conv(net, 1, 4, 1)
+        net = slim.flatten(net)
+        net = slim.fully_connected(net,1)
 
         return net
+    
+
+def discriminator_fl(img, scope, dim=64, train=True):
+    bn = partial(batch_norm, is_training=train)
+    conv_bn_lrelu = partial(conv, normalizer_fn=bn, activation_fn=lrelu, biases_initializer=None)
+
+    with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
+        net = lrelu(conv(img, dim, 4, 2))
+        net = conv_bn_lrelu(net, dim * 2, 4, 2)
+        net = conv_bn_lrelu(net, dim * 4, 4, 2)
+        net = conv_bn_lrelu(net, dim * 8, 4, 1)
+        net = conv(net, 1, 4, 1)
+        net = slim.flatten(net)
+
+        return net
+    
+'''Assuming list of 5 images
+'''
+def discriminator_seq(images,scope, dim=64, train=True):
+    d1 = discriminator_fl(images[0])
+    d2 = discriminator_fl(images[1])
+    d3 = discriminator_fl(images[2])
+    d4 = discriminator_fl(images[3])
+    d5 = discriminator_fl(images[4])
+    
+    out = tf.concat([d1,d2,d3,d4,d5],axis=1)
+    return slim.fully_connected(net,1)  
 
 
 def generator(img, scope, dim=64, train=True):

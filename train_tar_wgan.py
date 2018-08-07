@@ -14,8 +14,9 @@ import models
 import numpy as np
 import tensorflow as tf
 import utils
-
+from utils import gradient_penalty
 from deepcharacter import importer_tar
+    
 def train():
     epoch = 200
     batch_size = 1
@@ -63,17 +64,17 @@ def train():
     
     a_logit = discriminator_a(a_real)
     b2a_logit = discriminator_a(b2a)
-    b2a_sample_logit = discriminator_a(b2a_sample)
+    #b2a_sample_logit = discriminator_a(b2a_sample)
     b_logit = discriminator_b(b_real)
     a2b_logit = discriminator_b(a2b)
-    a2b_sample_logit = discriminator_b(a2b_sample)
+    #a2b_sample_logit = discriminator_b(a2b_sample)
     
     # losses
     #g_loss_a2b = tf.losses.mean_squared_error(a2b_logit, tf.ones_like(a2b_logit))
     #g_loss_b2a = tf.losses.mean_squared_error(b2a_logit, tf.ones_like(b2a_logit))
     
     g_loss_a2b = -tf.reduce_mean(a2b_logit)
-    g_loss_b2a = -tf.reduce_mean(b22_logit)
+    g_loss_b2a = -tf.reduce_mean(b2a_logit)
    
     cyc_loss_a = tf.losses.absolute_difference(a_real, a2b2a)
     cyc_loss_b = tf.losses.absolute_difference(b_real, b2a2b)
@@ -90,8 +91,9 @@ def train():
     gp_b = gradient_penalty(b_real, a2b, discriminator_b)
     
     d_loss_a = -wd_a + 10.0 * gp_a
-    
     d_loss_b = -wd_b + 10.0 * gp_b
+    
+      
     
 #    d_loss_b_real = tf.losses.mean_squared_error(b_logit, tf.ones_like(b_logit))
 #    d_loss_a2b_sample = tf.losses.mean_squared_error(a2b_sample_logit, tf.zeros_like(a2b_sample_logit))

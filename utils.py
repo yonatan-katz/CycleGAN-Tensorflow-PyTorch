@@ -120,3 +120,23 @@ def mkdir(paths):
     for path in paths:
         if not os.path.isdir(path):
             os.makedirs(path)
+            
+def gradient_penalty(real, fake, f):
+   
+    def interpolate(a, b):
+        shape = tf.concat((tf.shape(a)[0:1], tf.tile([1], [a.shape.ndims - 1])), axis=0)
+        alpha = tf.random_uniform(shape=shape, minval=0., maxval=1.)
+        inter = a + alpha * (b - a)
+        inter.set_shape(a.get_shape().as_list())
+        
+        return inter
+
+    x = interpolate(real, fake)
+    pred = f(x)
+    gradients = tf.gradients(pred, x)[0]
+    print("gradients",gradients)
+    print("x.shape.ndims",x.shape.ndims)
+    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=range(1, x.shape.ndims)))
+    gp = tf.reduce_mean((slopes - 1.)**2)
+    return gp
+
