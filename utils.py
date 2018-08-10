@@ -134,9 +134,17 @@ def gradient_penalty(real, fake, f):
     x = interpolate(real, fake)
     pred = f(x)
     gradients = tf.gradients(pred, x)[0]
-    print("gradients",gradients)
-    print("x.shape.ndims",x.shape.ndims)
-    slopes = tf.sqrt(tf.reduce_sum(tf.square(gradients), reduction_indices=range(1, x.shape.ndims)))
+    grad_flatten = tf.layers.flatten(gradients)
+    slopes = tf.sqrt(tf.reduce_sum(tf.square(grad_flatten), 1))
     gp = tf.reduce_mean((slopes - 1.)**2)
     return gp
+
+def preprocess_image(img,crop_size,channels=3):    
+    #img = tf.image.decode_png(img, channels=channels)
+    #img = tf.image.random_flip_left_right(img)
+    img = tf.image.resize_images(img, [crop_size, crop_size])
+    img = (img - tf.reduce_min(img)) / (tf.reduce_max(img) - tf.reduce_min(img))
+    #img = tf.random_crop(img, [crop_size, crop_size, channels])
+    img = img * 2 - 1
+    return img
 

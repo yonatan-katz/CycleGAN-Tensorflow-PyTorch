@@ -21,14 +21,14 @@ def discriminator(img, scope, dim=64, train=True):
 
     with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
         net = lrelu(conv(img, dim, 4, 2))
-        net = conv_bn_lrelu(net, dim * 2, 4, 2)
-        net = conv_bn_lrelu(net, dim * 4, 4, 2)
-        net = conv_bn_lrelu(net, dim * 8, 4, 1)
-        net = conv(net, 1, 4, 1)
-        net = slim.flatten(net)
-        net = slim.fully_connected(net,1,activation_fn=None)
+        net1 = conv_bn_lrelu(net, dim * 2, 4, 2)
+        net2 = conv_bn_lrelu(net1, dim * 4, 4, 2)
+        net3 = conv_bn_lrelu(net2, dim * 8, 4, 1)
+        net4 = conv(net3, 1, 4, 1)
+        net5 = slim.flatten(net4)
+        net6 = slim.fully_connected(net5,1,activation_fn=None)
 
-        return net
+        return net6,net,net1
     
 
 def discriminator_fl(img, scope, dim=64, train=True):
