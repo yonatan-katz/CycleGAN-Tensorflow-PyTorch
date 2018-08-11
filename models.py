@@ -7,7 +7,6 @@ from functools import partial
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 
-
 conv = partial(slim.conv2d, activation_fn=None)
 deconv = partial(slim.conv2d_transpose, activation_fn=None)
 relu = tf.nn.relu
@@ -21,14 +20,14 @@ def discriminator(img, scope, dim=64, train=True):
 
     with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
         net = lrelu(conv(img, dim, 4, 2))
-        net1 = conv_bn_lrelu(net, dim * 2, 4, 2)
-        net2 = conv_bn_lrelu(net1, dim * 4, 4, 2)
-        net3 = conv_bn_lrelu(net2, dim * 8, 4, 1)
-        net4 = conv(net3, 1, 4, 1)
-        net5 = slim.flatten(net4)
-        net6 = slim.fully_connected(net5,1,activation_fn=None)
+        net = conv_bn_lrelu(net, dim * 2, 4, 2)
+        net = conv_bn_lrelu(net, dim * 4, 4, 2)
+        net = conv_bn_lrelu(net, dim * 8, 4, 1)
+        net = conv(net, 1, 4, 1)
+        net = slim.flatten(net)
+        net = slim.fully_connected(net,1,activation_fn=None)
 
-        return net6,net,net1
+        return net
     
 
 def discriminator_fl(img, scope, dim=64, train=True):
