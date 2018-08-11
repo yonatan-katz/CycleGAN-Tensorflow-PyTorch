@@ -89,11 +89,18 @@ def train():
                                cyc_loss_b: 'cyc_loss_b'})    
     utils.summary({d_loss_a: 'd_loss_a'})    
     utils.summary({d_loss_b: 'd_loss_b'})
-    
     for variable in slim.get_model_variables():
-        tf.summary.histogram(variable.op.name, variable)
-        
+        tf.summary.histogram(variable.op.name, variable)        
     merged = tf.summary.merge_all()
+    
+    im1_op = tf.summary.image("real_a",a_real_in)
+    im2_op = tf.summary.image("a2b",a2b)
+    im3_op = tf.summary.image("b2a2b",b2a2b)
+    im4_op = tf.summary.image("real_b",b_real_in)
+    im5_op = tf.summary.image("b2a",b2a)
+    im6_op = tf.summary.image("b2a2b",b2a2b)    
+    
+    
     
     # optim
     t_var = tf.trainable_variables()
@@ -116,7 +123,8 @@ def train():
     it_cnt, update_cnt = utils.counter()    
     
     ''' summary '''
-    summary_writer = tf.summary.FileWriter('./outputs/summaries/', sess.graph)
+    summary_writer = tf.summary.FileWriter('./outputs/summaries/', sess.graph)    
+    
     
     ''' saver '''
     saver = tf.train.Saver(max_to_keep=5)
@@ -140,8 +148,10 @@ def train():
        
     
             # read data
-            a_real_np = cv2.resize(db_a_i.get_image(image_a_train_names[it_epoch]),(load_size,load_size))     
-            b_real_np = cv2.resize(db_b_i.get_image(image_b_train_names[it_epoch]),(load_size,load_size))                                              
+            a_real_np = cv2.resize(db_a_i.get_image(
+                    image_a_train_names[it_epoch % batch_epoch]),(load_size,load_size))     
+            b_real_np = cv2.resize(db_b_i.get_image(
+                    image_b_train_names[it_epoch % batch_epoch]),(load_size,load_size))                                              
             
             # train G
             sess.run(g_train_op, 
@@ -150,16 +160,16 @@ def train():
             # train discriminator            
             sess.run([d_a_train_op, d_b_train_op], 
                          feed_dict={a_real_in: [a_real_np], 
-                                    b_real_in: [b_real_np]})                        
+                                    b_real_in: [b_real_np]})                                    
             
-            # make summary
-            summary  = sess.run(merged, 
-                        feed_dict={a_real_in: [a_real_np], 
-                        b_real_in: [b_real_np]})            
-            summary_writer.add_summary(summary, it)            
             
             # display
             if it % 100 == 0:
+                # make summary
+                summary  = sess.run(merged, 
+                        feed_dict={a_real_in: [a_real_np], 
+                        b_real_in: [b_real_np]})            
+                summary_writer.add_summary(summary, it)            
                 print("Epoch: (%3d) (%5d/%5d)" % (epoch, it_epoch, batch_epoch))
     
             # save
@@ -178,6 +188,16 @@ def train():
                     feed_dict={a_real_in: [a_real_np], b_real_in: [b_real_np]})                
                 
                 sample_opt = np.concatenate((a_opt, a2b_opt, a2b2a_opt, b_opt, b2a_opt, b2a2b_opt), axis=0)
+                [im1_sum,im2_sum,im3_sum,im4_sum,im5_sum,im6_sum] = \
+                    sess.run([im1_op,im2_op,im3_op,im4_op,im5_op,im6_op], 
+                             feed_dict={a_real_in: [a_real_np], b_real_in: [b_real_np]})
+                
+                summary_writer.add_summary(im1_sum, it)
+                summary_writer.add_summary(im2_sum, it)
+                summary_writer.add_summary(im3_sum, it)
+                summary_writer.add_summary(im4_sum, it)
+                summary_writer.add_summary(im5_sum, it)                
+                summary_writer.add_summary(im6_sum, it)              
     
                 save_dir = './outputs/sample_images_while_training/'
                 utils.mkdir(save_dir)

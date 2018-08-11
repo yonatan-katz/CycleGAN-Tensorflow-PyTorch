@@ -19,13 +19,19 @@ def discriminator(img, scope, dim=64, train=True):
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, activation_fn=lrelu, biases_initializer=None)
 
     with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
-        net = lrelu(conv(img, dim, 4, 2))
-        net = conv_bn_lrelu(net, dim * 2, 4, 2)
-        net = conv_bn_lrelu(net, dim * 4, 4, 2)
-        net = conv_bn_lrelu(net, dim * 8, 4, 1)
-        net = conv(net, 1, 4, 1)
-        net = slim.flatten(net)
-        net = slim.fully_connected(net,1,activation_fn=None)
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):      
+            net = lrelu(conv(img, dim, 4, 2))
+        with tf.variable_scope("conv1", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 2, 4, 2)
+        with tf.variable_scope("conv2", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 4, 4, 2)
+        with tf.variable_scope("conv3", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 8, 4, 1)
+        with tf.variable_scope("conv4", reuse=tf.AUTO_REUSE):      
+            net = conv(net, 1, 4, 1)        
+        with tf.variable_scope("logit", reuse=tf.AUTO_REUSE):      
+            net = slim.flatten(net)        
+            net = slim.fully_connected(net,1,activation_fn=None)
 
         return net
     
@@ -35,13 +41,18 @@ def discriminator_fl(img, scope, dim=64, train=True):
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, activation_fn=lrelu, biases_initializer=None)
 
     with tf.variable_scope(scope + '_discriminator', reuse=tf.AUTO_REUSE):
-        net = lrelu(conv(img, dim, 4, 2))
-        net = conv_bn_lrelu(net, dim * 2, 4, 2)
-        net = conv_bn_lrelu(net, dim * 4, 4, 2)
-        net = conv_bn_lrelu(net, dim * 8, 4, 1)
-        net = conv(net, 1, 4, 1)
-        net = slim.flatten(net)
-
+        with tf.variable_scope("input", reuse=tf.AUTO_REUSE):      
+            net = lrelu(conv(img, dim, 4, 2))
+        with tf.variable_scope("conv_1", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 2, 4, 2)
+        with tf.variable_scope("conv_2", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 4, 4, 2)
+        with tf.variable_scope("conv_3", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_lrelu(net, dim * 8, 4, 1)
+        with tf.variable_scope("conv_4", reuse=tf.AUTO_REUSE):      
+            net = conv(net, 1, 4, 1)
+        with tf.variable_scope("logit", reuse=tf.AUTO_REUSE):      
+            net = slim.flatten(net)
         return net
     
 '''Assuming list of 5 images
@@ -54,7 +65,7 @@ def discriminator_seq(images,scope, dim=64, train=True):
     d5 = discriminator_fl(images[4])
     
     out = tf.concat([d1,d2,d3,d4,d5],axis=1)
-    return slim.fully_connected(net,1)  
+    return slim.fully_connected(out,1)
 
 
 def generator(img, scope, dim=64, train=True):
@@ -67,17 +78,20 @@ def generator(img, scope, dim=64, train=True):
         y = bn(conv(y, dim, 3, 1))
         return y + x
 
-    with tf.variable_scope(scope + '_generator', reuse=tf.AUTO_REUSE):
-        net = conv_bn_relu(img, dim, 7, 1)
-        net = conv_bn_relu(net, dim * 2, 3, 2)
-        net = conv_bn_relu(net, dim * 4, 3, 2)
+    with tf.variable_scope(scope + '_generator', reuse=tf.AUTO_REUSE):        
+        with tf.variable_scope("encode", reuse=tf.AUTO_REUSE):      
+            net = conv_bn_relu(img, dim, 7, 1)
+            net = conv_bn_relu(net, dim * 2, 3, 2)
+            net = conv_bn_relu(net, dim * 4, 3, 2)
 
-        for i in range(9):
-            net = _residule_block(net, dim * 4)
+        with tf.variable_scope("latent", reuse=tf.AUTO_REUSE):      
+            for i in range(9):
+                net = _residule_block(net, dim * 4)
 
-        net = deconv_bn_relu(net, dim * 2, 3, 2)
-        net = deconv_bn_relu(net, dim, 3, 2)
-        net = conv(net, 3, 7, 1)
-        net = tf.nn.tanh(net)
+        with tf.variable_scope("decode", reuse=tf.AUTO_REUSE):      
+            net = deconv_bn_relu(net, dim * 2, 3, 2)
+            net = deconv_bn_relu(net, dim, 3, 2)
+            net = conv(net, 3, 7, 1)
+            net = tf.nn.tanh(net)
 
         return net
